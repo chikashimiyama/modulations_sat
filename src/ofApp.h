@@ -1,0 +1,34 @@
+#pragma once
+
+#include "constant.h"
+#include "ofMain.h"
+#include "OSCInterpreter.h"
+#include "CameraController.h"
+#include "ParticleController.h"
+
+#include "Emitter.h"
+#include "Effector.h"
+#include "WorldPhysics.h"
+
+class ofApp : public ofBaseApp {
+
+public:	
+	void setup();
+	void update();
+	void draw();
+
+private:
+
+	msa::OpenCL opencl;
+	std::shared_ptr<msa::OpenCLKernel> kernelUpdate;
+
+	ParticleController particleController;
+	Emitter emitter;
+	CameraController cameraController;
+	Effector effector;
+	WorldPhysics worldPhysics;
+	OSCInterpreter oscInterpreter;
+};
+
+
+
