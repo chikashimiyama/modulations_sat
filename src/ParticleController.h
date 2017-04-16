@@ -1,5 +1,5 @@
 #pragma once
-
+#include <memory>
 #include "constant.h"
 #include "MSAOpenCL.h"
 #include "Particle.h"
@@ -9,23 +9,25 @@
 class ParticleController {
 public:
 	ParticleController():
+		prev(0),
 		count(0),
 		iLocation(0, 0, 0, 1.0){}
 
-	void setup(Emitter*, WorldPhysics*);
-	void setNumberOfSpawn(const int&);
-	void setInitialHole(const float&);
-	void setInitialDiffuse(const float&);
+	void setup(Emitter*, WorldPhysics*, std::shared_ptr<msa::OpenCLKernel>);
+
+	void setNumberOfSpawn(const int);
+	void setInitialHole(const float);
+	void setInitialDiffuse(const float);
 	void setInitialLocation(Direction dir, const float &);
 
-	void initCL(std::shared_ptr<msa::OpenCLKernel> kernelUpdate);
 	void update();
-
+	void drawParticles();
 private:
 
 	float4 randomizedPosition() const;
-	void setParticlePosition(int index, float4 randomPos);
+	void setParticlePosition(int index);
 	void vboSetup();
+	void clKernelInit(std::shared_ptr<msa::OpenCLKernel> kernelUpdate);
 
 	Emitter* emitter;
 	WorldPhysics* worldPhysics;
@@ -44,7 +46,17 @@ private:
 	GLuint vboIDs[2];
 };
 
+
+inline void ParticleController::setup(Emitter* em, WorldPhysics *wp, std::shared_ptr<msa::OpenCLKernel> kernelUpdate) {
+	emitter = em;
+	worldPhysics = wp;
+	vboSetup();
+	clKernelInit(kernelUpdate);
+}
+
+
 inline void ParticleController::vboSetup() {
+
 	glGenBuffersARB(2, vboIDs);
 
 	glBindBufferARB(GL_ARRAY_BUFFER_ARB, vboIDs[0]);
@@ -56,51 +68,46 @@ inline void ParticleController::vboSetup() {
 	glBindBufferARB(GL_ARRAY_BUFFER_ARB, 0);
 }
 
-inline void ParticleController::setup(Emitter* em, WorldPhysics *wp) {
-	emitter = em;
-	worldPhysics = wp;
-
-	vboSetup();
-
-	std::array<Particle, NUM_PARTICLES> particlesInitData;
-	std::array<float4, NUM_LINES> positionInitData;
-	std::array<float4, NUM_LINES> colorInitData;
-	std::array<float4, NUM_PARTICLES> randomTableInitData;
+inline void ParticleController::clKernelInit(std::shared_ptr<msa::OpenCLKernel> kernelUpdate) {
+	
+	std::vector<Particle> particlesInitData;
+	std::vector<float4> positionInitData;
+	std::vector<float4> colorInitData;
+	std::vector<float4> randomTableInitData;
 
 	for (int i = 0; i<NUM_PARTICLES; i++) {
-	
-		particlesInitData[i].vel.set(0, 0, 0, 0);
-		particlesInitData[i].accel.set(ofRandom(-0.001, 0.001), 0.0, 0, 0);
-		particlesInitData[i].mass = ofRandom(0.5, 1);
-		positionInitData[i * 2] = float4(0, 0, 0, 1.0);
-		positionInitData[i * 2 + 1] = float4(0, 0, 0, 1.0);
-		colorInitData[i * 2] = float4(1.0, 1.0, 1.0, 1.0);
-		colorInitData[i * 2 + 1] = float4(1.0, 1.0, 1.0, 1.0);
-		randomTableInitData[i] = float4(ofRandom(-1.0, 1.0), ofRandom(-1.0, 1.0), ofRandom(-1.0, 1.0), 0.0);
+		Particle p;
+		p.vel.set(0, 0, 0, 0);
+		p.accel.set(ofRandom(-0.001, 0.001), 0.0, 0, 0);
+		p.mass = ofRandom(0.5, 1);
+		particlesInitData.push_back(p);
+		positionInitData.emplace_back(0, 0, 0, 1.0);
+		positionInitData.emplace_back(0, 0, 0, 1.0);
+		colorInitData.emplace_back(1.0, 1.0, 1.0, 1.0);
+		colorInitData.emplace_back(1.0, 1.0, 1.0, 1.0);
+		randomTableInitData.emplace_back(ofRandom(-1.0, 1.0), ofRandom(-1.0, 1.0), ofRandom(-1.0, 1.0), 0.0);
 	}
 
 	particlesMemory.initBuffer(NUM_PARTICLES, &particlesInitData[0], CL_MEM_READ_WRITE);
 	positionMemory.initFromGLObject(vboIDs[0], NUM_LINES, &positionInitData[0], CL_MEM_READ_WRITE);
 	colorMemory.initFromGLObject(vboIDs[1], NUM_LINES, &colorInitData[0], CL_MEM_READ_WRITE);
 	randomTableMemory.initBuffer(NUM_PARTICLES, &randomTableInitData[0], CL_MEM_READ_ONLY);
+	
+	kernelUpdate->setArg(0, particlesMemory);
+	kernelUpdate->setArg(1, positionMemory);
+	kernelUpdate->setArg(2, colorMemory);
+	kernelUpdate->setArg(3, randomTableMemory);
 }
 
-inline void ParticleController::initCL(std::shared_ptr<msa::OpenCLKernel> kernelUpdate) {
-	kernelUpdate->setArg(0, particlesMemory.getCLMem());
-	kernelUpdate->setArg(1, positionMemory.getCLMem());
-	kernelUpdate->setArg(2, colorMemory.getCLMem());
-	kernelUpdate->setArg(3, randomTableMemory.getCLMem());
-}
-
-inline void ParticleController::setNumberOfSpawn(const int &spawn) {
+inline void ParticleController::setNumberOfSpawn(const int spawn) {
 	numSpawn = spawn;
 }
 
-inline void ParticleController::setInitialHole(const float &hole) {
+inline void ParticleController::setInitialHole(const float hole) {
 	iHole = hole;
 }
 
-inline void ParticleController::setInitialDiffuse(const float &diffuse) {
+inline void ParticleController::setInitialDiffuse(const float diffuse) {
 	iDiffuse = diffuse;
 }
 
@@ -116,45 +123,35 @@ inline void ParticleController::setInitialLocation(Direction dir, const float &l
 }
 
 inline void ParticleController::update() {
+	if (numSpawn == 0)return;
 
 	count += numSpawn;  // count possibly greater as NUM_PARTICLE
 	for (int i = prev; i < count; i++) {
 		int wrapped = i % NUM_PARTICLES;
-		Particle p = emitter->spawnParticle();
-		particlesMemory[i] = p;
-		float4 randomPos = randomizedPosition();
-		setParticlePosition(wrapped, randomPos);
+		particlesMemory[wrapped] = emitter->spawnParticle();
+		setParticlePosition(wrapped);
 	}
 
-	int offset = prev * PARTICLE_SIZE;
 	if (count < NUM_PARTICLES) {
-		int dataSize = numSpawn * PARTICLE_SIZE;
-		particlesMemory.writeToDevice(offset, dataSize);
-		offset = prev * LINE_SIZE;
-		dataSize = numSpawn * LINE_SIZE;
-		positionMemory.writeToDevice(offset, dataSize);
+		particlesMemory.writeToDevice(prev, numSpawn);
+		positionMemory.writeToDevice(prev*2, numSpawn*2);
 
 	} else {
-		int excess = count - NUM_PARTICLES; // e.g. 20021 - 20000 = 21
 
-		int dataSize = (numSpawn - excess) * PARTICLE_SIZE; // (100 - 50) * sizeParticle
-		particlesMemory.writeToDevice(offset, dataSize); // 9050 - 9999
+		int excess = count - NUM_PARTICLES; // 20030 - 20000 = 30
+		int remain = numSpawn - excess; // 50 - 30 = 20
+		particlesMemory.writeToDevice(prev, remain); //
+		positionMemory.writeToDevice(prev*2, remain*2);
 
-		dataSize = excess * PARTICLE_SIZE; // 0 - 49
-		particlesMemory.writeToDevice(0, dataSize);
-
-		// vertex
-		offset = prev * LINE_SIZE;
-		dataSize = (numSpawn - excess) * LINE_SIZE;
-		positionMemory.writeToDevice(offset, dataSize);
-		dataSize = excess * LINE_SIZE;
-		positionMemory.writeToDevice(0, dataSize);
+		if (excess > 0) {
+			particlesMemory.writeToDevice(0, excess);
+			positionMemory.writeToDevice(0, excess*2);
+		}
+		count %= NUM_PARTICLES; 
 	}
 
-	count %= NUM_PARTICLES; // e.g. 9950
-	prev = count; // pre = 9950
+	prev = count;
 }
-
 
 inline float4 ParticleController::randomizedPosition() const{
 	ofVec3f rp = ofVec3f(ofRandom(iDiffuse) + iHole, 0, 0);
@@ -162,7 +159,29 @@ inline float4 ParticleController::randomizedPosition() const{
 	return std::move(float4(rp.x, rp.y, rp.z, 0.0));
 }
 
-inline void ParticleController::setParticlePosition(int index, float4 randomPos) {
+inline void ParticleController::setParticlePosition(int index) {
+	float4 randomPos = randomizedPosition();
 	positionMemory[index * 2] = iLocation + randomPos;
 	positionMemory[index * 2+1] = iLocation + randomPos;
+}
+
+inline void ParticleController::drawParticles() {
+	glEnableClientState(GL_VERTEX_ARRAY);
+	glEnableClientState(GL_COLOR_ARRAY);
+
+	glBindBufferARB(GL_ARRAY_BUFFER_ARB, vboIDs[0]);
+	glVertexPointer(4, GL_FLOAT, 0, 0);
+
+	glBindBufferARB(GL_ARRAY_BUFFER_ARB, vboIDs[1]);
+	glColorPointer(4, GL_FLOAT, 0, 0);
+
+	glDrawArrays(GL_LINES, 0, NUM_LINES);
+	glPushMatrix();
+	glScalef(-1, -1, -1);
+	glDrawArrays(GL_LINES, 0, NUM_LINES);
+	glPopMatrix();
+
+	glBindBufferARB(GL_ARRAY_BUFFER_ARB, 0);
+	glDisableClientState(GL_VERTEX_ARRAY);
+	glDisableClientState(GL_COLOR_ARRAY);
 }

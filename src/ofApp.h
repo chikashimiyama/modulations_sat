@@ -21,6 +21,7 @@ private:
 
 	msa::OpenCL opencl;
 	std::shared_ptr<msa::OpenCLKernel> kernelUpdate;
+	std::shared_ptr<msa::OpenCLKernel> kernelTest;
 
 	ParticleController particleController;
 	Emitter emitter;

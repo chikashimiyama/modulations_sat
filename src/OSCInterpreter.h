@@ -44,16 +44,22 @@ inline void OSCInterpreter::processMessage() {
 		ofxOscMessage mes;
 		oscReceiver.getNextMessage(&mes);
 		std::vector<std::string> address = separateAddress(mes.getAddress());
-		if (address[0] == "camera") {
+		std::string firstElement = address[0];
+		if (firstElement == "camera") {
 			processMessageToCamera(mes, address);
-		} else if (address[0] == "subcam") {
+		} else if (firstElement == "subcam") {
 			processMessageToSubcam(mes, address);
-		} else if (address[0] == "emitter") {
+		} else if (firstElement == "emitter") {
 			processMessageToEmitter(mes, address);
-		} else if (address[0] == "world") {
+		} else if (firstElement == "world") {
 			processMessageToWorld(mes, address);
-		} else if (address[0] == "effect") {
+		} else if (firstElement == "effect") {
 			processMessageToEffect(mes, address);
+		} else if (firstElement == "fullscreen") {
+			bool fs =  static_cast<bool>(mes.getArgAsInt32(0));
+			ofSetFullscreen(fs);
+		}else {
+			ofLog(OF_LOG_WARNING) << "undefined message:" + address[0];
 		}
 	}
 }
@@ -69,6 +75,8 @@ inline void OSCInterpreter::processMessageToCamera(ofxOscMessage &mes, const std
 		cameraController->setCameraElevation(mes.getArgAsFloat(0));
 	} else if (secondElement == "distance") {
 		cameraController->setCameraDistance(mes.getArgAsFloat(0));
+	} else {
+		ofLog(OF_LOG_WARNING) << "undefined message:" + secondElement;
 	}
 }
 
@@ -81,9 +89,10 @@ inline void OSCInterpreter::processMessageToSubcam(ofxOscMessage &mes, const std
 		cameraController->setSubcamElevation(mes.getArgAsFloat(0));
 	} else if (secondElement == "distance") {
 		cameraController->setSubcamDistance(mes.getArgAsFloat(0));
+	} else {
+		ofLog(OF_LOG_WARNING) << "undefined message:" + secondElement;
 	}
 }
-
 
 inline void OSCInterpreter::processMessageToEmitter(ofxOscMessage &mes, const std::vector<std::string> &address) {
 	
@@ -99,6 +108,8 @@ inline void OSCInterpreter::processMessageToEmitter(ofxOscMessage &mes, const st
 		} else if (thirdElement == "z") {
 			particleController->setInitialLocation(Direction::z, mes.getArgAsFloat(0));
 			worldPhysics->setInitialAttractorLocation(Direction::z, mes.getArgAsFloat(0));
+		} else {
+			ofLog(OF_LOG_WARNING) << "undefined message:" + thirdElement;
 		}
 	} else if (secondElement == "iVel") {
 		std::string thirdElement = address[2];
@@ -108,6 +119,8 @@ inline void OSCInterpreter::processMessageToEmitter(ofxOscMessage &mes, const st
 			emitter->setInitialVelocity(Direction::y, mes.getArgAsFloat(0));
 		} else if (thirdElement == "z") {
 			emitter->setInitialVelocity(Direction::z, mes.getArgAsFloat(0));
+		} else {
+			ofLog(OF_LOG_WARNING) << "undefined message:" + thirdElement;
 		}
 	} else if (secondElement == "iAccel") {
 		std::string thirdElement = address[2];
@@ -117,6 +130,8 @@ inline void OSCInterpreter::processMessageToEmitter(ofxOscMessage &mes, const st
 			emitter->setInitialAcceleration(Direction::y, mes.getArgAsFloat(0));
 		} else if (thirdElement == "z") {
 			emitter->setInitialAcceleration(Direction::z, mes.getArgAsFloat(0));
+		} else {
+			ofLog(OF_LOG_WARNING) << "undefined message:" + thirdElement;
 		}
 	} else if (secondElement == "iAccelRand") {
 		std::string thirdElement = address[2];
@@ -126,6 +141,8 @@ inline void OSCInterpreter::processMessageToEmitter(ofxOscMessage &mes, const st
 			emitter->setInitialAccelerationRandom(Direction::y, mes.getArgAsFloat(0));
 		} else if (thirdElement == "z") {
 			emitter->setInitialAccelerationRandom(Direction::z, mes.getArgAsFloat(0));
+		} else {
+			ofLog(OF_LOG_WARNING) << "undefined message:" + thirdElement;
 		}
 	} else if (secondElement == "iRotFact") {
 		std::string thirdElement = address[2];
@@ -135,6 +152,8 @@ inline void OSCInterpreter::processMessageToEmitter(ofxOscMessage &mes, const st
 			emitter->setInitialRotationFactor(Direction::y, mes.getArgAsFloat(0));
 		} else if (thirdElement == "z") {
 			emitter->setInitialRotationFactor(Direction::z, mes.getArgAsFloat(0));
+		} else {
+			ofLog(OF_LOG_WARNING) << "undefined message:" + thirdElement;
 		}
 	} else if (secondElement == "iLifetime") {
 		emitter->setInitialLifetime(mes.getArgAsInt32(0));
@@ -171,58 +190,68 @@ inline void OSCInterpreter::processMessageToEmitter(ofxOscMessage &mes, const st
 		particleController->setInitialHole(mes.getArgAsFloat(0));
 	} else if (secondElement == "iDiffuse") {
 		particleController->setInitialDiffuse(mes.getArgAsFloat(0));
+	} else {
+		ofLog(OF_LOG_WARNING) << "undefined message:" + secondElement;
 	}
 }
 
 
 inline void OSCInterpreter::processMessageToWorld(ofxOscMessage &mes, const std::vector<std::string> &address) {
 	std::string secondElement = address[1];
-/*
+
 	if (secondElement == "rev") {
-		rev = mes.getArgAsFloat(0);
+		worldPhysics->setReverse(mes.getArgAsFloat(0));
 	}else if (secondElement == "revFact") {
 		std::string thirdElement = address[2];
-		revFact.x = mes.getArgAsFloat(0);
-	}else if (secondElement == "revFact/y") {
-		revFact.y = mes.getArgAsFloat(0);
-	}else if (secondElement == "revFact/z") {
-		revFact.z = mes.getArgAsFloat(0);
+		if (thirdElement == "x") {
+			worldPhysics->setReverseFactor(Direction::x, mes.getArgAsFloat(0));
+		} else if (thirdElement == "y") {
+			worldPhysics->setReverseFactor(Direction::y, mes.getArgAsFloat(0));
+		} else if (thirdElement == "z") {
+			worldPhysics->setReverseFactor(Direction::z, mes.getArgAsFloat(0));
+		} else {
+			ofLog(OF_LOG_WARNING) << "undefined message:" + thirdElement;
+		}
 	}else if (secondElement == "attraction") {
-		attraction = mes.getArgAsFloat(0);
+		worldPhysics->setAttraction(mes.getArgAsFloat(0));
 	}else if (secondElement == "attDetach") {
-		attDetach = mes.getArgAsFloat(0);
+		worldPhysics->setAttractionDetach(mes.getArgAsFloat(0));
 	}else if (secondElement == "gravity") {
-		gravity = mes.getArgAsFloat(0);
+		worldPhysics->setGravity(mes.getArgAsFloat(0));
+	} else {
+		ofLog(OF_LOG_WARNING) << "undefined message:" + secondElement;
 	}
-	*/
 }
 
 inline void OSCInterpreter::processMessageToEffect(ofxOscMessage &mes , const std::vector<std::string> &address) {
-	/*
-	if (secondElement == "/effect/bloom/x") {
-		bloomSpread[0] = m.getArgAsFloat(0);
-	}else if (secondElement == "/effect/bloom/y") {
-		bloomSpread[1] = m.getArgAsFloat(0);
-	}else if (secondElement == "/effect/bloom/gain") {
-		bloomGain = m.getArgAsFloat(0);
-	}else if (secondElement == "/effect/blur/x") {
-		blur[0] = m.getArgAsFloat(0);
-	}else if (secondElement == "/effect/blur/y") {
-		blur[1] = m.getArgAsFloat(0);
-	}else if (secondElement == "/effect/blur/rotate") {
-		blurRotate = m.getArgAsFloat(0);
-	}else if (secondElement == "/effect/blur/brightness") {
-		blurBrightness = m.getArgAsFloat(0);
-	}else if (secondElement == "/fullscreen") {
-		int fs = m.getArgAsInt32(0);
-		if (fs > 0) {
-			ofSetFullscreen(true);
+	std::string secondElement = address[1];
+	std::string thirdElement = address[2];
+
+	if (secondElement == "bloom") {
+		if (thirdElement == "x") {
+			effector->setBloomSpread(Direction::x, mes.getArgAsFloat(0));
+		} else if (thirdElement == "y") {
+			effector->setBloomSpread(Direction::y, mes.getArgAsFloat(0));
+		} else if (thirdElement == "gain") {
+			effector->setBloomGain(mes.getArgAsFloat(0));
+		} else {
+			ofLog(OF_LOG_WARNING) << "undefined message:" + thirdElement;
 		}
-		else {
-			ofSetFullscreen(false);
+	} else if (secondElement == "blur") {
+		if (thirdElement == "x") {
+			effector->setBlur(Direction::x, mes.getArgAsFloat(0));
+		} else if (thirdElement == "y") {
+			effector->setBlur(Direction::y, mes.getArgAsFloat(0));
+		} else if (thirdElement == "rotate") {
+			effector->setBlurRotate(mes.getArgAsFloat(0));
+		} else if (thirdElement == "brightness") {
+			effector->setBlurBrightness(mes.getArgAsFloat(0));
+		} else {
+			ofLog(OF_LOG_WARNING) << "undefined message:" + thirdElement;
 		}
+	} else {
+		ofLog(OF_LOG_WARNING) << "undefined message:" + secondElement;
 	}
-	*/
 }
 
 inline std::vector<std::string> OSCInterpreter::separateAddress(const std::string& str) const{
@@ -232,5 +261,6 @@ inline std::vector<std::string> OSCInterpreter::separateAddress(const std::strin
 	while (std::getline(iss, token, '/')) {
 		separated.push_back(token);
 	}
+	separated.erase(separated.begin());
 	return separated;
 }

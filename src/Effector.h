@@ -11,11 +11,14 @@ public:
 	void setBlurBrightness(const float&);
 	void setBloomSpread(Direction, const float&);
 	void setBloomGain(const float&);
-	void apply();
-	void recursiveBlur();
-	void drawSquare();
+	
+	void record();
+	void drawBlur();
 	void process();
+
 private:
+	void drawSquare();
+
 	float blur[2];
 	float blurRotate;
 	float blurBrightness;
@@ -28,15 +31,16 @@ private:
 	ofTexture recuresiveTex;
 };
 
+
 inline void Effector::setup() {
 	bloomShader.load("shader/bloom");
 	recuresiveTex.allocate(WIDTH, HEIGHT, GL_RGB);
 	effect2DFbo.allocate(WIDTH, HEIGHT);
 	bloom2DFbo.allocate(WIDTH, HEIGHT);
+}
 
+inline void Effector::record() {
 	effect2DFbo.begin();
-	ofClear(0);
-	effect2DFbo.end();
 }
 
 inline void Effector::setBlur(Direction dir, const float& b) {
@@ -65,7 +69,7 @@ inline void Effector::setBloomGain(const float &bGain){
 	bloomGain = bGain;
 }
 
-inline void Effector::apply() {
+inline void Effector::drawBlur() {
 	ofPushMatrix();
 
 	float col = blurBrightness;
@@ -91,12 +95,32 @@ inline void Effector::apply() {
 
 	recuresiveTex.unbind();
 	ofDisableBlendMode();
+
 	ofPopMatrix();
 	glColor4f(1.0, 1.0, 1.0, 1.0);
 }
 
+inline void Effector::process() {
+
+	effect2DFbo.end(); // end of recording
+	effect2DFbo.draw(0,0); // end of recording
+
+	//bloom2DFbo.begin();
+	//bloomShader.begin();
+	//bloomShader.setUniform1f("bloomgain", bloomGain);
+	//bloomShader.setUniform2f("bloomspread", bloomSpread[0], bloomSpread[1]);
+	//bloomShader.setUniformTexture("basetex", effect2DFbo.getTextureReference(), 0);
+	//
+	//drawSquare();
+
+	//bloomShader.end();
+	//bloom2DFbo.end();
+	//bloom2DFbo.draw(0, 0);
+	recuresiveTex.loadScreenData(0, 0, WIDTH, HEIGHT);
+}
+
 inline void Effector::drawSquare() {
-	glEnable(GL_TEXTURE_2D);
+	glEnable(GL_TEXTURE_RECTANGLE_ARB);
 	glBegin(GL_POLYGON);
 	glTexCoord2f(0, HEIGHT);
 	glVertex2f(0, 0);
@@ -107,21 +131,5 @@ inline void Effector::drawSquare() {
 	glTexCoord2f(0, 0);
 	glVertex2f(0, HEIGHT);
 	glEnd();
-	glDisable(GL_TEXTURE_2D);
-}
-
-inline void Effector::process() {
-
-	effect2DFbo.end(); // end of recording
-
-	bloom2DFbo.begin();
-	bloomShader.begin();
-	bloomShader.setUniform1f("bloomgain", bloomGain);
-	bloomShader.setUniform2f("bloomspread", bloomSpread[0], bloomSpread[1]);
-	bloomShader.setUniformTexture("basetex", effect2DFbo.getTextureReference(), 0);
-	drawSquare();
-	bloomShader.end();
-	bloom2DFbo.end();
-	bloom2DFbo.draw(0, 0);
-	recuresiveTex.loadScreenData(0, 0, WIDTH, HEIGHT);
+	glDisable(GL_TEXTURE_RECTANGLE_ARB);
 }

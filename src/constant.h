@@ -6,8 +6,8 @@
 #include "MSAOpenCL.h"
 #include "Particle.h"
 
-const int WIDTH = 1280;
-const int HEIGHT = 720;
+const int WIDTH = 1024;
+const int HEIGHT = 1024;
 const int NUM_PARTICLES = 20000;
 const int NUM_LINES = NUM_PARTICLES * 2;
 const float RADIAN = 0.01744f;
