@@ -103,19 +103,18 @@ inline void Effector::drawBlur() {
 inline void Effector::process() {
 
 	effect2DFbo.end(); // end of recording
-	effect2DFbo.draw(0,0); // end of recording
+	effect2DFbo.draw(0, 0);
 
-	//bloom2DFbo.begin();
-	//bloomShader.begin();
-	//bloomShader.setUniform1f("bloomgain", bloomGain);
-	//bloomShader.setUniform2f("bloomspread", bloomSpread[0], bloomSpread[1]);
-	//bloomShader.setUniformTexture("basetex", effect2DFbo.getTextureReference(), 0);
-	//
-	//drawSquare();
+	bloom2DFbo.begin();
+	bloomShader.begin();
+	bloomShader.setUniform1f("bloomGain", bloomGain);
+	bloomShader.setUniform2f("bloomSpread", bloomSpread[0], bloomSpread[1]);
+	bloomShader.setUniformTexture("baseTex", effect2DFbo.getTextureReference(), 0);
+	drawSquare();
+	bloomShader.end();
+	bloom2DFbo.end();
 
-	//bloomShader.end();
-	//bloom2DFbo.end();
-	//bloom2DFbo.draw(0, 0);
+	bloom2DFbo.draw(0, 0);
 	recuresiveTex.loadScreenData(0, 0, WIDTH, HEIGHT);
 }
 

@@ -2,6 +2,7 @@
 #define USE_OPENGL_CONTEXT
 
 void ofApp::setup() {
+	ofSetFrameRate(60);
 	ofBackground(0, 0, 0);
 	ofSetLogLevel(OF_LOG_VERBOSE);
 	ofSetVerticalSync(true);
@@ -24,13 +25,15 @@ void ofApp::update() {
 	particleController.update();
 	worldPhysics.updateCLKernel(kernelUpdate);
 	kernelUpdate->run1D(NUM_PARTICLES);
-	opencl.finish();
+	ofLog() << ofGetFrameRate();
 }
 
 void ofApp::draw() {
-	ofClear(0, 0, 0);
+
 	effector.record();
+	ofClear(0, 0, 0);
 	effector.drawBlur();
+	opencl.finish();
 
 
 	cameraController.begin();

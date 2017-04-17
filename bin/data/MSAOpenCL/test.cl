@@ -18,6 +18,11 @@ typedef struct{
     float dummy;
 } Particle;
 
+__kernel void test(){
+	
+
+}
+
 __kernel void updateParticle(
             __global Particle* particles,
             __global float4* posBuffer,
@@ -32,7 +37,7 @@ __kernel void updateParticle(
             const float4 revFact
                              )
 {
-
+/*
 	int id = get_global_id(0);
     int posID = id * 2;
 	__global Particle *p = &particles[id];
@@ -110,5 +115,5 @@ __kernel void updateParticle(
         p->life -= 1.0;
 
         //colorBuffer
-        colorBuffer[id*2+1] = (float4)(brightness,brightness,brightness,1.0);
+        colorBuffer[id*2+1] = (float4)(brightness,brightness,brightness,1.0);*/
 }
