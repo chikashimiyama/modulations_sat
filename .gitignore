@@ -25,3 +25,5 @@ bin/assimp.dll
 bin/data/.gitkeep
 .vs/modulations_sat/v14/.suo
 ClassDiagram.cd
+.dll
+.o
