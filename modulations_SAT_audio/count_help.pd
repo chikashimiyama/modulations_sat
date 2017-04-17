@@ -1,0 +1,9 @@
+#N canvas 263 153 274 201 10;
+#X obj 70 31 bng 15 250 50 0 empty empty increment 17 7 0 10 -262144
+-1 -1;
+#X floatatom 142 55 5 0 0 0 reset - -;
+#X floatatom 70 107 5 0 0 0 - - -;
+#X obj 70 80 count;
+#X connect 0 0 3 0;
+#X connect 1 0 3 1;
+#X connect 3 0 2 0;
